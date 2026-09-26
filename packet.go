@@ -99,6 +99,12 @@ type Packet interface {
 	Metadata() *PacketMetadata
 }
 
+type LazyPacket interface {
+	Packet
+	LazyLayers() []Layer
+	DecodeNextLayer()
+}
+
 // packet contains all the information we need to fulfill the Packet interface,
 // and its two "subclasses" (yes, no such thing in Go, bear with me),
 // eagerPacket and lazyPacket, provide eager and lazy decoding logic around the
@@ -529,6 +535,9 @@ func (p *lazyPacket) decodeNextLayer() {
 		p.addFinalDecodeError(err, nil)
 	}
 }
+func (p *lazyPacket) DecodeNextLayer() {
+	p.decodeNextLayer()
+}
 func (p *lazyPacket) LinkLayer() LinkLayer {
 	for p.link == nil && p.next != nil {
 		p.decodeNextLayer()
@@ -558,6 +567,9 @@ func (p *lazyPacket) ErrorLayer() ErrorLayer {
 		p.decodeNextLayer()
 	}
 	return p.failure
+}
+func (p *lazyPacket) LazyLayers() []Layer {
+	return p.layers
 }
 func (p *lazyPacket) Layers() []Layer {
 	for p.next != nil {
